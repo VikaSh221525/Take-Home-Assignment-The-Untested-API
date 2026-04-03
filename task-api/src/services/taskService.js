@@ -6,10 +6,14 @@ const getAll = () => [...tasks];
 
 const findById = (id) => tasks.find((t) => t.id === id);
 
-const getByStatus = (status) => tasks.filter((t) => t.status.includes(status));
+// FIX: was using .includes(status) which is substring match, not exact match.
+// e.g. getByStatus('in') would match 'in_progress'. Use === instead.
+const getByStatus = (status) => tasks.filter((t) => t.status === status);
 
+// FIX: was using `page * limit` as the offset, so page 1 would skip the first
+// 10 results entirely. Correct formula is (page - 1) * limit.
 const getPaginated = (page, limit) => {
-  const offset = page * limit;
+  const offset = (page - 1) * limit;
   return tasks.slice(offset, offset + limit);
 };
 
@@ -60,18 +64,30 @@ const remove = (id) => {
   return true;
 };
 
+// FIX: was hard-coding `priority: 'medium'`, which silently overwrote whatever
+// priority the task had. Removed that line — priority should never change on complete.
+
 const completeTask = (id) => {
   const task = findById(id);
   if (!task) return null;
-
+ 
   const updated = {
     ...task,
-    priority: 'medium',
     status: 'done',
     completedAt: new Date().toISOString(),
   };
-
+ 
   const index = tasks.findIndex((t) => t.id === id);
+  tasks[index] = updated;
+  return updated;
+};
+
+// NEW: assigns a task to a named person
+const assignTask = (id, assignee) => {
+  const index = tasks.findIndex((t) => t.id === id);
+  if (index === -1) return null;
+ 
+  const updated = { ...tasks[index], assignee };
   tasks[index] = updated;
   return updated;
 };
@@ -90,5 +106,6 @@ module.exports = {
   update,
   remove,
   completeTask,
+  assignTask,
   _reset,
 };
